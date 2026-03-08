@@ -19,10 +19,11 @@ module tt_um_romultra_top (
   // All output pins must be assigned. If not used, assign to 0.
   // assign uo_out  = 0; // Unused outputs for now
   assign uio_out[7:4] = 0; // Unused IOs for now
+  assign uio_out[2] = 0;
   assign uio_oe  = 8'b00001011; // Set IO[0], IO[1], and IO[3] as outputs for SPI signals, the rest are inputs
   
   // List all unused inputs to prevent warnings
-  wire _unused = &{ena, 1'b0};
+  wire _unused = &{ena, ui_in, 1'b0};
 
   SPI_RAM u_spi_ram (
     .o_SPI_CS   (uio_out[0]),
@@ -66,13 +67,14 @@ module SPI_RAM (
     // It is therefore not set here but in instead in the CS switching block, which lead the combined tx by one cycle, recreating the 8bit command properly.
     wire [6:0] o_command_byte;
     assign o_command_byte[6:0] = !i_command?  7'h03 : 7'h02; // READ Command or WRITE Command.
-    wire [30:0] o_combined_TX  = !i_command? {o_command_byte, i_address, 8'h00} : {o_command_byte, i_address, i_data_IN};
+    wire [31:0] o_combined_TX  = !i_command? {o_command_byte, i_address, 9'h000} : {o_command_byte, i_address, i_data_IN, 1'b0};
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             o_SPI_CS <= 1;
+            o_SPI_MOSI <= 1;
             o_SPI_SCK <= 0;
-            r_TX_Bit_Count <= 5'b11110; // MSB first, so we start at bit 30
+            r_TX_Bit_Count <= 5'b11111; // MSB first, so we start at bit 31
         end
         
         else begin case (o_SPI_CS)
@@ -80,7 +82,7 @@ module SPI_RAM (
                     // On SPI Mode 0, the first clock edge is positive and therefore data sampling.
                     o_SPI_MOSI <= 0; 
                     o_SPI_CS <= 0; // The first bit shift must therefore be set at the same time as CS is pulled down
-                    r_TX_Bit_Count <= 5'b11110;
+                    r_TX_Bit_Count <= 5'b11111;
                 end
                 1'b0: begin
                     o_SPI_SCK <= ~o_SPI_SCK;
