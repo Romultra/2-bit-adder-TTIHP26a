@@ -83,33 +83,18 @@ module SPI_RAM (
                     r_TX_Bit_Count <= 5'b11110;
                 end
                 1'b0: begin
-                    if (i_command && o_SPI_SCK) begin // Write, all action inside are shifting data, so execute on SCK negedge
+                    o_SPI_SCK <= ~o_SPI_SCK;
+                    if (o_SPI_SCK) begin //  Shifting data, execute on SCK negedge
                         if (r_TX_Bit_Count > 0) begin
                             o_SPI_MOSI <= o_combined_TX[r_TX_Bit_Count];
                             r_TX_Bit_Count <= r_TX_Bit_Count-1;
-                        end 
-                        else if (r_TX_Bit_Count == 0) begin
-                            o_SPI_MOSI <= o_combined_TX[r_TX_Bit_Count];
-                            o_SPI_SCK <= 0;
+                        end else begin
                             o_SPI_CS <= 1;
                         end
+                    end else if (!i_command && r_TX_Bit_Count <= 7) begin // Read
+                        // Receive data, data sampling, so execute on SCK posedge
+                        o_data_OUT[r_TX_Bit_Count[2:0]] <= i_SPI_MISO;
                     end 
-                    else if (!i_command) begin // Read
-                        if (r_TX_Bit_Count > 7 && o_SPI_SCK) begin // Send command and address, data shifting, so execute on SCK negedge
-                            o_SPI_MOSI <= o_combined_TX[r_TX_Bit_Count];
-                            r_TX_Bit_Count <= r_TX_Bit_Count-1;
-                        end 
-                        else if (r_TX_Bit_Count > 0 && !o_SPI_SCK) begin // Receive data, data sampling, so execute on SCK posedge
-                            o_data_OUT[r_TX_Bit_Count] <= i_SPI_MISO;
-                            r_TX_Bit_Count <= r_TX_Bit_Count-1;
-                        end
-                        else if (r_TX_Bit_Count == 0 && !o_SPI_SCK) begin
-                            o_data_OUT[r_TX_Bit_Count] <= i_SPI_MISO;
-                            o_SPI_SCK <= 0;
-                            o_SPI_CS <= 1;
-                        end
-                    end
-                    o_SPI_SCK <= ~o_SPI_SCK;
                 end
             endcase
         end
