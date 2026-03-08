@@ -35,6 +35,8 @@ module tb ();
   );
 
   // Standalone SPI_RAM instance with controllable inputs for direct testing
+  // Not available in gate-level simulation (module is synthesized away)
+`ifndef GL_TEST
   reg        spi_ready;
   reg [15:0] spi_address;
   reg [7:0]  spi_data_in;
@@ -58,5 +60,6 @@ module tb ();
       .clk        (clk),
       .rst_n      (rst_n)
   );
+`endif
 
 endmodule
