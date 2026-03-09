@@ -23,7 +23,7 @@ module tt_um_romultra_top (
   assign uio_oe  = 8'b00001011; // Set IO[0], IO[1], and IO[3] as outputs for SPI signals, the rest are inputs
   
   // List all unused inputs to prevent warnings
-  wire _unused = &{ena, ui_in, 1'b0};
+  wire _unused = &{ena, ui_in, uio_in[7:3], uio_in[1:0], 1'b0};
 
   SPI_RAM u_spi_ram (
     .o_SPI_CS   (uio_out[0]),
